@@ -2,18 +2,15 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-// Definimos una estructura para pasar múltiples argumentos al hilo.
-// Pthreads solo acepta un argumento (void*), por lo que "empaquetamos"
-// el tamaño N y el puntero al arreglo en esta estructura.
+// Estructura para pasar múltiples argumentos al hilo.
 typedef struct {
     int size;             // Cantidad de números a generar (N)
     long long *fib_array; // Puntero al arreglo compartido donde se escribirán los datos
 } ThreadArgs;
 
 // Función que ejecutará el hilo trabajador
-// Calcula la secuencia de Fibonacci y llena el arreglo compartido
 void *fibonacci_worker(void *arg) {
-    // 1. Desempaquetamos los argumentos: Cast de (void*) a (ThreadArgs*)
+    // 1. Desempaquetamos los argumentos
     ThreadArgs *args = (ThreadArgs *)arg;
     int n = args->size;
     long long *arr = args->fib_array;
@@ -57,7 +54,6 @@ int main(int argc, char *argv[]) {
         return 0; 
     }
 
-    // 1. GESTIÓN DE MEMORIA (Requisito del Main)
     // Asignamos memoria en el heap para compartirla con el hilo.
     // Usamos 'long long' para soportar números más grandes que un int estándar.
     long long *fib_sequence = (long long *)malloc(n * sizeof(long long));
@@ -66,26 +62,22 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // 2. PREPARACIÓN DE ARGUMENTOS
     // Llenamos la estructura con los datos necesarios
     ThreadArgs args;
     args.size = n;
     args.fib_array = fib_sequence;
 
-    // 3. CREACIÓN DEL HILO (Requisito de pthread_create)
     pthread_t tid; // Identificador del hilo
     pthread_attr_t attr; // Atributos del hilo
 
     pthread_attr_init(&attr);
+    
     // Creamos el hilo pasando la función y la dirección de nuestra estructura 'args'
     pthread_create(&tid, &attr, fibonacci_worker, &args);
 
-    // 4. SINCRONIZACIÓN (Requisito de pthread_join)
     // El hilo principal espera aquí hasta que el trabajador termine.
-    // Esto garantiza que el arreglo esté lleno antes de imprimir.
     pthread_join(tid, NULL);
 
-    // 5. IMPRESIÓN DE RESULTADOS (Responsabilidad del Main)
     // Una vez el hilo worker termina, el main retoma el control e imprime.
     printf("La secuencia de Fibonacci de %d elementos es:\n", n);
     for (int i = 0; i < n; i++) {
